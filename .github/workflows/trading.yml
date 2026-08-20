@@ -1,0 +1,36 @@
+name: MoonX DEMO — Routine trading SMC
+
+on:
+  schedule:
+    # Toutes les heures à la minute 43 (UTC). GitHub peut retarder de quelques minutes.
+    - cron: "43 * * * *"
+  workflow_dispatch: {}  # permet de lancer manuellement depuis l'onglet Actions
+
+permissions:
+  contents: write  # nécessaire pour re-commiter l'état (state/)
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Exécuter la routine de trading
+        env:
+          MOONX_TOKEN: ${{ secrets.MOONX_TOKEN }}
+        run: python trading_routine.py
+
+      - name: Sauvegarder l'état (state/) dans le dépôt
+        run: |
+          git config user.name "moonx-bot"
+          git config user.email "moonx-bot@users.noreply.github.com"
+          git add state/
+          git diff --cached --quiet || git commit -m "état routine $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
